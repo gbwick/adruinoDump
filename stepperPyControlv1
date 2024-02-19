@@ -1,0 +1,70 @@
+#define STEPS_PER_REVOLUTION 4096 // Adjust if necessary for partial rotations
+
+// Define a variable to hold the currently active motor
+int *currentActiveMotor = nullptr;
+int currentSteps = 0; // Track steps for the current active motor
+
+// Define all motor pins
+int motorA1Pins[] = {2, 3, 4, 5}; // A1
+int motorA2Pins[] = {6, 7, 8, 9}; // A2
+int motorB1Pins[] = {10, 11, 12, 13}; // B1
+int motorB2Pins[] = {14, 15, 16, 17}; // B2
+
+void setup() {
+  Serial.begin(9600);
+  // Initialize motor pins as outputs
+  for (int i = 0; i < 4; i++) {
+    pinMode(motorA1Pins[i], OUTPUT);
+    pinMode(motorA2Pins[i], OUTPUT);
+    pinMode(motorB1Pins[i], OUTPUT);
+    pinMode(motorB2Pins[i], OUTPUT);
+  }
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    String command = Serial.readStringUntil('\n');
+    handleCommand(command);
+  }
+  
+  if (currentActiveMotor != nullptr) {
+    // If there's an active motor, continue moving it
+    continueMovingMotor(currentActiveMotor);
+  }
+}
+
+void handleCommand(String command) {
+  if (command.startsWith("move_")) {
+    if (command == "move_A1") {
+      currentActiveMotor = motorA1Pins;
+    } else if (command == "move_A2") {
+      currentActiveMotor = motorA2Pins;
+    } else if (command == "move_B1") {
+      currentActiveMotor = motorB1Pins;
+    } else if (command == "move_B2") {
+      currentActiveMotor = motorB2Pins;
+    }
+    currentSteps = 0; // Reset steps for the new active motor
+  } else if (command.startsWith("stop_")) {
+    stopMotor(currentActiveMotor); // Stop the currently active motor
+    currentActiveMotor = nullptr; // No active motor
+  }
+}
+
+void continueMovingMotor(int motorPins[]) {
+  // Simplified for demonstration: Move the motor in small increments here
+  int stepPhase = currentSteps % 4;
+  for (int pin = 0; pin < 4; pin++) {
+    digitalWrite(motorPins[pin], (stepPhase == pin) ? HIGH : LOW);
+  }
+  currentSteps++; // Increment steps
+  if (currentSteps >= STEPS_PER_REVOLUTION) currentSteps = 0; // Loop steps
+  delay(2); // Control speed, adjust as necessary
+}
+
+void stopMotor(int motorPins[]) {
+  if (motorPins == nullptr) return;
+  for (int pin = 0; pin < 4; pin++) {
+    digitalWrite(motorPins[pin], LOW); // De-energize all coils
+  }
+}
